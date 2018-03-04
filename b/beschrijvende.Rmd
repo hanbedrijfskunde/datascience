@@ -1,0 +1,89 @@
+---
+title: "Beschrijvende statistiek"
+output: html_notebook
+---
+
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+library(tidyverse)
+```
+
+
+# Data inlezen
+
+We gaan een *comma separated variables (csv)* bestand inlezen. De dataset komt uit de tweejaarlijkse [europese sociale survey (css)](http://www.europeansocialsurvey.org/).
+
+Nadat we de ruwe data hebben ingelezen, kunnen de kwaliteit beoordelen. 
+
+```{r message=FALSE, warning=FALSE}
+ruweData <- read.csv("ess.csv")
+
+dim(ruweData)
+head(ruweData[1:15])
+str(ruweData[1:15])
+summary(ruweData[1:15])
+```
+
+De set bestaat uit `r dim(ruweData)[1]` rijen (observaties) en `r dim(ruweData)[2]` kolommen (variabelen). Gezien de omvang van het aantal variabelen beperken we ons even tot de eerste 15 kolommen. Deze bestaan uit verschillende datatypes: numerieke (`num` en `int`) en categorische (`Factor`).
+
+# Kwaliteit data aanpassen
+Het algoritme dat de data heeft ingelezen, probeert de types zo goed mogelijk in te schatten, maar is niet feilloos. Als we bijvoorbeeld kijken naar de variabele `gndr` die het geslacht van de respondenten bevat dan zien we dat die is gecodeerd naar "1" en "2" die als numerieke waarden worden beschouwd. Uit de toelichting bij de data blijkt dat "man", "vrouw" en "geen antwoord" zijn gecodeerd als "1", "2" en "9". We kunnen de codering makkelijk weer terugdraaien.
+
+Als we deze variabele in een draaitabel verwerken, zien we dat er iets meer vrouwen aan de survey hebben deelgenomen dan mannen.
+
+```{r warning=FALSE}
+str(ruweData$gndr)
+table(ruweData$gndr)
+
+ruweData$gndr <- factor(ruweData$gndr, levels = c(1, 2, 9), labels = c("man", "vrouw", "NA"))
+table(ruweData$gndr)
+```
+
+# Data visualiseren
+Om de data en verhoudingen nog beter zichtbaar te maken, kan deze worden gevisualiseerd. In het volgende voorbeeld nemen we de variabele `tvtot`. Dit is het aantal uur dat respondenten naar eigen inschattingen op een gewone dag besteden aan televisiekijken.
+
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+p1 <- ggplot(ruweData) +
+  geom_bar(aes(x = tvtot, fill = factor(tvtot)))
+p1
+```
+
+Een andere variabele geeft het vertrouwen weer dat personen in anderen hebben. Ook deze kunnen we in een grafiek weergeven. Deze keer maken we onderscheid naar geslacht.
+
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+p2 <- ggplot(ruweData) +
+  geom_bar(aes(x = ppltrst, fill = gndr), position = position_dodge())
+p2
+```
+
+We moeten hier voorzichtig zijn met het trekken van conclusies, want we hadden al opgemerkt dat er sowieso meer vrouwen hadden deelgenomen aan de survey dan mannen. Als vrouwen dezelfde verdeling van vertrouwen zouden hebben als mannen, zou iedere rechterkolom `r round((sum(ruweData$gndr == "vrouw")/sum(ruweData$gndr == "man") - 1) * 100)`% hoger moeten zijn.
+
+Daarom kunnen we beter eerst de relatieve verhoudingen uitrekenen en dan pas visualiseren.
+
+```{r}
+cntTrstGndr <- count(ruweData, ppltrst, gndr)
+grpByTrst <- cntTrstGndr %>%
+  na.omit() %>%
+  group_by(gndr) %>%
+  mutate(prop = n / sum(n))
+
+p3 <- ggplot(grpByTrst) +
+  geom_col(aes(x = ppltrst, y = prop, fill = gndr), position = position_dodge())
+p3
+```
+
+Er zijn geen opvallende verschillen. Wel als we naar andere variabelen kijken.
+
+```{r}
+# How happy are you?
+ggplot(ruweData) +
+  geom_boxplot(aes(x = gndr, y = happy))
+
+# What are/were your total 'basic' or contracted hours each week (in your main job)?
+ggplot(ruweData) +
+  geom_boxplot(aes(x = gndr, y = wkhct))
+
+# How safe do you - or would you - feel walking alone in this area after dark? 1=Very safe
+ggplot(ruweData) +
+  geom_boxplot(aes(x = gndr, y = aesfdrk))
+```
+
