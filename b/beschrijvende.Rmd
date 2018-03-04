@@ -3,16 +3,17 @@ title: "Beschrijvende statistiek"
 output: html_notebook
 ---
 
-```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+```{r message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
 library(tidyverse)
 ```
 
+![](http://jsndesign.co.uk/jsn_content/uploads/2017/05/Crisp-DM_all-1.png)
 
 # Data inlezen
 
 We gaan een *comma separated variables (csv)* bestand inlezen. De dataset komt uit de tweejaarlijkse [europese sociale survey (css)](http://www.europeansocialsurvey.org/).
 
-Nadat we de ruwe data hebben ingelezen, kunnen de kwaliteit beoordelen. 
+Nadat we de ruwe data hebben ingelezen, kunnen we de kwaliteit beoordelen. 
 
 ```{r message=FALSE, warning=FALSE}
 ruweData <- read.csv("ess.csv")
